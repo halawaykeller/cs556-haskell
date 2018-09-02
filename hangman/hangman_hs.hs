@@ -190,21 +190,26 @@ getHangman n
 -}
 
 
-playGame' :: Int -> String -> String -> IO Int
-playGame' n [] word = return n
-playGame' n (c:cs) word 
-                    | checkGuess c word = playGame' n cs word 
+playGame' :: Int -> Int -> String -> String -> IO (Int, Int)
+playGame' turn n [] word = return (turn, n)
+playGame' turn n (c:cs) word 
+                    | checkGuess c word = do
+                                            putStrLn $ show turn ++ ".     Enter the letter(s) you want to guess: "
+                                            putStrLn ("\nThat letter was correct.\n\n")
+                                            putStrLn $ getHangman n
+                                            playGame' (turn+1) n cs word 
                     | otherwise = do
-                                     putStrLn (getHangman n)
-                                     playGame' (n+1) cs word
+                                     putStrLn ("\nThat letter was incorrect.\n\n")
+                                     putStrLn $ getHangman $ n+1
+                                     playGame' (turn+1) (n+1) cs word
 
  -- play the game for each character in the line
 playGame :: Int -> Int -> String -> IO ()
 playGame turn n word = do
-                putStrLn $ show turn ++ ".     Enter the letter(s) you want to guess: "
-                line  <- checkInput
-                num <- playGame' n line word 
-                playGame (turn+1) num word
+                        putStrLn $ show turn ++ ".     Enter the letter(s) you want to guess: "
+                        line  <- checkInput
+                        state <- playGame' turn n line word 
+                        playGame (fst state) (snd state) word
 
 
 
