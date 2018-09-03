@@ -144,8 +144,24 @@ intro xs =   "Welcome to the game Hangman!\n\n" ++
              "You will lose if you have guessed 10 letters wrong.\n\n" ++
              "This is the word you need to guess: " ++ xs ++ "\n\n"
 
-currentWord :: String -> String
-currentWord = map (\x -> '.') 
+reveal :: Char -> Char -> Char
+reveal c x
+        | c == x = c
+        | otherwise = '.'
+
+currentWord :: String -> String -> String
+currentWord [] word = map (\x -> '.') word
+currentWord guess word = concat [[reveal c x | x <- word] | c <- guess]
+
+currentWord' :: String -> String -> [String]
+currentWord' [] word = [map (\x -> '.') word]
+currentWord' guess word = foldr (:) [] list where list = [[reveal c x | x <- word] | c <- guess]
+
+compare' :: Char -> Char -> Char
+compare' = undefined 
+-- compare' ('.') x = x
+-- compare' x ('.') = x
+-- compare' _ _ = '.'
 
 getListLength :: String -> Int
 getListLength s = length $ splitOn "|" s
@@ -189,36 +205,49 @@ getHangman n
     Partially revealed word 
 -}
 
+getFst :: (a, b, c) -> a
+getFst (a, _, _) = a
 
-playGame' :: Int -> Int -> String -> String -> IO (Int, Int)
-playGame' turn n [] word = return (turn, n)
-playGame' turn n (c:cs) word 
+getSnd :: (a, b, c) -> b
+getSnd (_, b, _) = b
+
+getThrd :: (a, b, c) -> c
+getThrd (_, _, c) = c
+
+
+playGame' :: Int -> Int -> String -> String -> String -> IO (Int, Int, String)
+playGame' turn n [] word partialWord = return (turn, n, partialWord)
+playGame' turn n (c:cs) word partialWord 
                     | checkGuess c word = do
-                                            putStrLn $ show turn ++ ".     Enter the letter(s) you want to guess: "
-                                            putStrLn ("\nThat letter was correct.\n\n")
+                                            putStrLn $ show turn 
+                                            putStrLn ("\nThat letter was correct.\n")
+                                            putStrLn ("The word including the letters you guessed: " ++ (currentWord (c:partialWord) word) ++ "\n")
+                                            putStrLn (c:partialWord)
                                             putStrLn $ getHangman n
-                                            playGame' (turn+1) n cs word 
+                                            playGame' (turn+1) n cs word (c:partialWord)
                     | otherwise = do
-                                     putStrLn ("\nThat letter was incorrect.\n\n")
+                                     putStrLn $ show turn 
+                                     putStrLn ("\nThat letter was incorrect.\n")
+                                     putStrLn ("The word including the letters you guessed: " ++ (currentWord partialWord word) ++ "\n")
                                      putStrLn $ getHangman $ n+1
-                                     playGame' (turn+1) (n+1) cs word
+                                     putStrLn (partialWord)
+                                     playGame' (turn+1) (n+1) cs word partialWord
 
  -- play the game for each character in the line
-playGame :: Int -> Int -> String -> IO ()
-playGame turn n word = do
+playGame :: Int -> Int -> String -> String -> IO ()
+playGame turn n partialWord word = do
                         putStrLn $ show turn ++ ".     Enter the letter(s) you want to guess: "
                         line  <- checkInput
-                        state <- playGame' turn n line word 
-                        playGame (fst state) (snd state) word
-
+                        state <- playGame' turn n line word partialWord
+                        playGame (getFst state) (getSnd state) (getThrd state) word
 
 
 main = do 
         putStrLn logo
         s <- readFile "words.txt"
         num <- randomRIO (0, getListLength s) :: IO Int
-        putStrLn $ intro $ currentWord $ getWord s num
+        putStrLn $ intro $ currentWord [] $ getWord s num
 
-        playGame 0 0 (getWord s num)
+        playGame 0 0 [] (getWord s num)
 
 
