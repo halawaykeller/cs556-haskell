@@ -1,9 +1,8 @@
 {-
-(f >=> g) >=> h  === f >=> (g >=> h)
-
-return >=> f  ===  f >=> return  ===  f
+Kimberly Keller
+Monad Exercises
+9/12/18
 -}
-
 
 import Control.Monad
 import Data.List
@@ -40,31 +39,37 @@ instance Monad Btree where
     (>>=) (Leaf a) f =  f a
     (>>=) (Fork a b) f = (Fork ((>>=) a f) ((>>=) b f)) 
 
-{- 
-
-To Do: Write up proper test cases for the monad laws 
-
-((iota >=> iota) >=> iota) 4
-
-(iota >=> (iota >=> iota)) 4
-
-(return >=> iota) 4
-Fork (Fork (Leaf 1) (Leaf 2)) (Fork (Leaf 3) (Leaf 4))
-
-(iota >=> return) 4
-Fork (Fork (Leaf 1) (Leaf 2)) (Fork (Leaf 3) (Leaf 4))
-
-iota 4
-Fork (Fork (Leaf 1) (Leaf 2)) (Fork (Leaf 3) (Leaf 4))
-
-
-functor and monad instance for the btree
-monad laws for both
-
-there are different monad instances for Lulz
--}   
-
 newtype Lulz a = Lulz {runLulz :: [[a]]} deriving (Eq, Show)
+
+instance Functor Lulz where
+    fmap f (Lulz a) = Lulz [ [f x | x <- ks] | ks <- a ]
+
+-- This produces an n x n list of lists, but with the same list repeated n times. 
+rho :: Int -> Lulz Int
+rho n = Lulz [ [i | i<-[1..n]] | j <- [1..n] ]
+
+{-
+I wrote two implementations of join for Lulz. Neither of them worked quite right.
+Although both were associative, as far as I could tell. I used the one that 
+seemed more correct. 
+-}
+
+-- More correct
+joinLulz :: Lulz (Lulz a) -> Lulz a
+joinLulz xs = Lulz (fmap concat (runLulz ks)) where ks = (fmap (concat . runLulz) xs)
+
+-- Less correct
+joinLulz' :: Lulz (Lulz a) -> Lulz a
+joinLulz' xs = Lulz (concat (fmap runLulz (concat (runLulz xs))))
+
+instance  Applicative Lulz where
+    (<*>) = ap
+    pure = return 
+
+instance Monad Lulz where
+    return a = Lulz [[a]]
+    (>>=) lulz f = joinLulz (fmap f lulz)
+
 
 test1 :: Lulz Int
 test1 = Lulz [[1,2], [1,2]]
@@ -104,32 +109,53 @@ test8 = (return >=> rho) 2
 test9 :: Lulz Int
 test9 = (rho >=> return) 2
 
-instance Functor Lulz where
-    fmap f (Lulz a) = Lulz [ [f x | x <- ks] | ks <- a ]
+test10 :: Btree Int
+test10 = (iota >=> (iota >=> iota)) 2
 
-{- [[1,2], [3,4]] -}
-rho :: Int -> Lulz Int
-rho n = Lulz [ [i | i<-[1..n]] | j <- [1..n] ]
+test11 :: Btree Int
+test11 = ((iota >=> iota) >=> iota) 2
+
+test12 :: Btree Int
+test12 = (return >=> iota) 2
+
+test13 :: Btree Int
+test13 = (iota >=> return) 2
+
+{-
+
+Test Cases Run in GHCI:
+
+*Main> test6
+Lulz {runLulz = [[1,1,1,2,1,2,1,1,2,1,2],[1,1,1,2,1,2,1,1,2,1,2]]}
+*Main> test7
+Lulz {runLulz = [[1,1,1,2,1,2,1,1,2,1,2],[1,1,1,2,1,2,1,1,2,1,2]]}
+*Main> test6 == test7
+True
+*Main> test8
+Lulz {runLulz = [[1,2,1,2]]}
+*Main> test9
+Lulz {runLulz = [[1,2],[1,2]]}
+*Main> test8 == test9
+False
+*Main> rho 2
+Lulz {runLulz = [[1,2],[1,2]]}
+*Main> test10
+Fork (Leaf 1) (Fork (Leaf 1) (Fork (Leaf 1) (Leaf 2)))
+*Main> test11
+Fork (Leaf 1) (Fork (Leaf 1) (Fork (Leaf 1) (Leaf 2)))
+*Main> test10 == test11
+True
+*Main> test12
+Fork (Leaf 1) (Leaf 2)
+*Main> test13
+Fork (Leaf 1) (Leaf 2)
+*Main> test12 == test13
+True
+*Main> iota 2
+Fork (Leaf 1) (Leaf 2)
 
 
-joinLulz :: Lulz (Lulz a) -> Lulz a
-joinLulz xs = Lulz (fmap concat (runLulz ks)) where ks = (fmap (concat . runLulz) xs)
-
-
-joinLulz :: Lulz (Lulz a) -> Lulz a
-joinLulz xs = Lulz (concat (fmap runLulz (concat (runLulz xs))))
-
-instance  Applicative Lulz where
-    (<*>) = ap
-    pure = return 
-
-
-instance Monad Lulz where
-    return a = Lulz [[a]]
-    (>>=) lulz f = joinLulz (fmap f lulz)
-
-
-
+-}
 
 
 
