@@ -49,18 +49,19 @@ rho :: Int -> Lulz Int
 rho n = Lulz [ [i | i<-[1..n]] | j <- [1..n] ]
 
 {-
-I wrote two implementations of join for Lulz. Neither of them worked quite right.
-Although both were associative, as far as I could tell. I used the one that 
-seemed more correct. 
+I wrote several incorrect, incomplete implementations of join for Lulz. 
+You can see the thought progression as I worked my way toward writing one that
+uses recursion. 
 -}
 
--- More correct
+-- Doesn't really work at all
+joinLulz' :: Lulz (Lulz a) -> Lulz a
+joinLulz' xs = Lulz (concat (fmap runLulz (concat (runLulz xs))))
+
+-- Works specifically for test4
 joinLulz :: Lulz (Lulz a) -> Lulz a
 joinLulz xs = Lulz (fmap concat (runLulz ks)) where ks = (fmap (concat . runLulz) xs)
 
--- Less correct
-joinLulz' :: Lulz (Lulz a) -> Lulz a
-joinLulz' xs = Lulz (concat (fmap runLulz (concat (runLulz xs))))
 
 instance  Applicative Lulz where
     (<*>) = ap
@@ -68,7 +69,10 @@ instance  Applicative Lulz where
 
 instance Monad Lulz where
     return a = Lulz [[a]]
-    (>>=) lulz f = joinLulz (fmap f lulz)
+    -- Definition of bind with my broken joinLulz
+    -- (>>=) lulz f = joinLulz (fmap f lulz)
+    -- Trying to define recursiely, but this doesn't compile 
+    -- (>>=) (Lulz a) f = Lulz ((>>=) (concatMap f a) f)
 
 
 test1 :: Lulz Int
@@ -97,6 +101,10 @@ test4 = Lulz [[Lulz [[1,2,3],
 test5 :: Lulz [Int]
 test5 = (fmap (concat . runLulz) test4)
 
+{-
+Little Tests For Monad Laws (using joinLulz for definition of bind)
+-}
+
 test6 :: Lulz Int
 test6 = (rho >=> (rho >=> rho)) 2
 
@@ -122,7 +130,6 @@ test13 :: Btree Int
 test13 = (iota >=> return) 2
 
 {-
-
 Test Cases Run in GHCI:
 
 *Main> test6
@@ -153,8 +160,6 @@ Fork (Leaf 1) (Leaf 2)
 True
 *Main> iota 2
 Fork (Leaf 1) (Leaf 2)
-
-
 -}
 
 
