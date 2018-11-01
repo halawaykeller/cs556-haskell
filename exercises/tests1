@@ -1,0 +1,23 @@
+λ> :l applicative_exercise.hs 
+[1 of 1] Compiling Main             ( applicative_exercise.hs, interpreted )
+Ok, one module loaded.
+*Main
+λ> sum x
+6
+*Main
+λ> and (Cons True (Cons False Nil))
+False
+*Main
+λ> any even x
+True
+*Main
+λ> fr <*> xr
+Node 2 [Node 3 [],Node 4 [],Node 3 [Node 4 [],Node 5 []],Node 4 [Node 5 [],Node 6 []]]
+*Main
+λ> gr <*> yr
+Node 2 [Node 3 [],Node 3 [Node 4 []]]
+*Main
+λ> ZipRoseTree gr <*> ZipRoseTree yr
+ZipRoseTree {getZipRoseTree = Node 2 [Node 4 []]}
+*Main
+λ> 
