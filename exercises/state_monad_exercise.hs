@@ -1,5 +1,13 @@
+{-
+Kimberly Keller + Jazmine Madrigal
+
+10/31/2018
+State Monad Exercise
+-}
+
 import Control.Monad
 import Data.Char
+import qualified System.Random as S
 
 newtype State s a = State {runState :: s -> (a, s)}
 
@@ -30,11 +38,9 @@ put s = State $ \_ -> ((), s)
 evalState :: State b a -> b -> a
 evalState x s = fst $ runState x s
 
-execState :: State b a -> b -> b
-execState m s = snd (runState m s)
-
-
 foo = Ternary (Binary (Leaf 1) (Leaf 2)) (Leaf 3) (Ternary (Leaf 5) (Leaf 7) (Binary (Unary (Leaf 11)) (Leaf 13))) 
+
+foo1 = Binary (Unary (Leaf 11)) (Leaf 13)
 
 test = copyM foo :: State a (Tree Integer)
 
@@ -50,32 +56,45 @@ copyM (Unary t) = Unary <$> (copyM t)
 copyM (Binary t1 t2) = Binary <$> (copyM t1) <*> (copyM t2)
 copyM (Ternary t1 t2 t3) = Ternary <$> (copyM t1) <*> (copyM t2) <*> (copyM t3)
 
-label' :: Enum a1 => Tree a -> a1 -> Tree a1
-label' t b = evalState (label t b) b
-
-test1 :: Tree Char
-test1 = label' foo 'a'
-
 next :: Enum a => State a a
 next = do n <- get
           put (succ n)
           return n
 
-succ' :: Enum a => a -> a
-succ' n = execState next n
+num :: S.RandomGen g => State g Int
+num = State $ S.randomR (0, 1) 
 
--- plus :: Int -> Int -> Int
--- plus n x = execState (sequence $ replicate n tick) x           
+label :: Enum b => Tree a -> b -> Tree b
+label t b = evalState (sequence $ label' t) b
 
-label :: (Applicative f, Enum a1) => Tree a2 -> a1 -> f (Tree a1)
-label (Leaf a) b = Leaf <$> pure (succ' b)
-label t b = label t (succ b)
+label' :: Enum g => Tree a -> Tree (State g g)
+label' (Leaf a) = Leaf next
+label' (Unary t) = Unary (label' t)
+label' (Binary t1 t2) = Binary (label' t1) (label' t2)
+label' (Ternary t1 t2 t3) = Ternary (label' t1) (label' t2) (label' t3)
+
+randomize :: Tree a -> Tree Int
+randomize t = evalState (sequence $ randomize' t) (S.mkStdGen 1)
+
+randomize' :: S.RandomGen g => Tree a -> Tree (State g Int)
+randomize' (Leaf a) = Leaf num
+randomize' (Unary t) = Unary (randomize' t)
+randomize' (Binary t1 t2) = Binary (randomize' t1) (randomize' t2)
+randomize' (Ternary t1 t2 t3) = Ternary (randomize' t1) (randomize' t2) (randomize' t3)
 
 
--- label (Unary t) b = Unary <$> (label t (succ' b))
--- label (Binary t1 t2) b = Binary <$> (label t1 (succ' b)) <*> (label t2 (succ' b))
--- label (Ternary t1 t2 t3) b = Ternary <$> (label t1 (succ' b)) <*> (label t2 (add (succ' b))) <*> (label t3 (succ' b))
 
 
--- create a solution using traverese for problem 4, create a tree of state monads and create a state monad of tree and then runstate to apply to a seed
--- tree of random to random tree
+
+
+
+
+
+
+
+
+
+
+
+
+
