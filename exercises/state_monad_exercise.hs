@@ -67,7 +67,7 @@ num = State $ S.randomR (0, 1)
 label :: Enum b => Tree a -> b -> Tree b
 label t b = evalState (sequence $ label' t) b
 
-label' :: Enum g => Tree a -> Tree (State g g)
+label' :: Enum b => Tree a -> Tree (State b b)
 label' (Leaf a) = Leaf next
 label' (Unary t) = Unary (label' t)
 label' (Binary t1 t2) = Binary (label' t1) (label' t2)
@@ -83,6 +83,21 @@ randomize' (Binary t1 t2) = Binary (randomize' t1) (randomize' t2)
 randomize' (Ternary t1 t2 t3) = Ternary (randomize' t1) (randomize' t2) (randomize' t3)
 
 
+{-
+Tests:
+
+*Main
+λ> label foo 'a'
+Ternary (Binary (Leaf 'a') (Leaf 'b')) (Leaf 'c') (Ternary (Leaf 'd') (Leaf 'e') (Binary (Unary (Leaf 'f')) (Leaf 'g')))
+
+*Main
+λ> label foo '1'
+Ternary (Binary (Leaf '1') (Leaf '2')) (Leaf '3') (Ternary (Leaf '4') (Leaf '5') (Binary (Unary (Leaf '6')) (Leaf '7')))
+
+*Main
+λ> randomize foo
+Ternary (Binary (Leaf 1) (Leaf 0)) (Leaf 1) (Ternary (Leaf 1) (Leaf 0) (Binary (Unary (Leaf 1)) (Leaf 0))) 
+-}
 
 
 
